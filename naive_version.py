@@ -82,9 +82,86 @@ def naiveDiagonalApproach(t,k,v):
                     seenInteractions.update(interCounter(row,seenInteractions))
     return CA
 
+def growCA(CA,t,k,v):
+
+    #incease k by 1
+    column= k+1
+
+    orow = len(CA)
+
+    seenInteractions = set()
+
+    #provides space for the additional column section that we are adding
+    CA_map = map(lambda x: x + ([-1] * (column - len(x))), CA + ([[-1] * column] * (orow - len(CA))))
+    CA_new = list(CA_map)
+
+    #Within the exisiting CA, replace the empty new column value with a sym that has best coverage,
+    #or pick a random one if it cannot be maximized
+    for row in CA_new:
+        for i in range(len(row)):
+            if row[i] == -1:
+                greatestSeen, options = -1, {}
+                for sym in range(v):
+                    row[i] = sym
+                    if len(interCounter(row,seenInteractions)) >= greatestSeen:
+                        options[sym] = len(interCounter(row,seenInteractions))
+                        greatestSeen = len(interCounter(row,seenInteractions))
+                if len(options) == 0:
+                    row[i] = random.randint(0,v-1)
+
+                randKey = random.choice(list(options))
+
+                row[i] = list(options).pop(list(options).index(randKey))
+
+        seenInteractions.update(interCounter(row,seenInteractions))
+
+        #print("initial ", len(seenInteractions))
+
+    unseenInterCount = int(v**t*(special.binom(column,t)))
+    while len(seenInteractions) < unseenInterCount:
+        for row in CA_new:
+            for i in range(len(row)):
+                for j in range(i+1):
+                    #if an interaction includes the newly added column, then it is a new interaction
+                    if i == row[-1] or j == row[-1]:
+                        newRow = [-1]*(column)
+                        for r in range(len(newRow)):
+                            if newRow[r] == -1:
+                                greatestSeenRow, optionsRow = -1, {}
+                                for symRow in range(v):
+                                    newRow[r] = symRow
+                                    if len(interCounter(newRow,seenInteractions)) >= greatestSeenRow:
+                                        optionsRow[symRow] = len(interCounter(newRow,seenInteractions))
+                                        greatestSeenRow = len(interCounter(newRow,seenInteractions))
+                                if len(optionsRow) == 0:
+                                    newRow[r] = random.randint(0,v-1)
+
+                                randKey = random.choice(list(optionsRow))
+
+                                newRow[r] = list(optionsRow).pop(list(optionsRow).index(randKey))
+                                seenInteractions.update(interCounter(row,seenInteractions))
+
+
+                                CA_new.append(newRow)
+
+
+
+    #print(CA_new)
+    #print(unseenInterCount)
+    #print(len(seenInteractions))
+
+    return CA_new
+
+
 if __name__ == '__main__':
-    print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
-    print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
-    print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
-    print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
-    print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
+    CA = naiveDiagonalApproach(2,15,3)
+    print(CA)
+    print("Number of rows:", len(CA))
+
+    newCA = growCA(CA,2,15,3)
+    print("number of new rows:", len(newCA))
+#
+#   print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
+#   print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
+#   print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
+#   print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
