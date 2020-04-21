@@ -1,5 +1,5 @@
 from scipy import special
-# import matplotlib.pyplot as rowPlot
+import matplotlib.pyplot as rowPlot
 import math
 import random
 import itertools
@@ -82,86 +82,67 @@ def naiveDiagonalApproach(t,k,v):
                     seenInteractions.update(interCounter(row,seenInteractions))
     return CA
 
-def growCA(CA,t,k,v):
-
+def naiveDiagonalGrowth(CA,t,k,v):
     #incease k by 1
-    column= k+1
-
-    orow = len(CA)
-
-    seenInteractions = set()
-
-    #provides space for the additional column section that we are adding
-    CA_map = map(lambda x: x + ([-1] * (column - len(x))), CA + ([[-1] * column] * (orow - len(CA))))
-    CA_new = list(CA_map)
-
-    #Within the exisiting CA, replace the empty new column value with a sym that has best coverage,
-    #or pick a random one if it cannot be maximized
-    for row in CA_new:
-        for i in range(len(row)):
-            if row[i] == -1:
-                greatestSeen, options = -1, {}
-                for sym in range(v):
-                    row[i] = sym
-                    if len(interCounter(row,seenInteractions)) >= greatestSeen:
-                        options[sym] = len(interCounter(row,seenInteractions))
-                        greatestSeen = len(interCounter(row,seenInteractions))
-                if len(options) == 0:
-                    row[i] = random.randint(0,v-1)
-
-                randKey = random.choice(list(options))
-
-                row[i] = list(options).pop(list(options).index(randKey))
-
+    k = k+1
+    #print(t,k,v)
+    unseenInterCount, seenInteractions = int(v**t*(special.binom(k,t))), set()
+    unseenInteractions = generateUnseenInters(t,k,v)
+    for row in CA:
         seenInteractions.update(interCounter(row,seenInteractions))
-
-        #print("initial ", len(seenInteractions))
-
-    unseenInterCount = int(v**t*(special.binom(column,t)))
+    for i in range(len(CA)):
+        CA[i].append(-1)
+    for row in CA:
+        greatestSeen, options, toAdd = -1, {}, -1
+        for sym in range(v):
+            row[-1] = sym
+            if len(interCounter(row,seenInteractions)) >= greatestSeen:
+                options[sym] = len(interCounter(row,seenInteractions))
+                greatestSeen = len(interCounter(row,seenInteractions))
+        if len(options) == 0:
+            row[-1] = random.randint(0,v-1)
+        row[-1] = options.pop(random.choice(list(options.keys())))
+        seenInteractions.update(interCounter(row,seenInteractions))
     while len(seenInteractions) < unseenInterCount:
-        for row in CA_new:
-            for i in range(len(row)):
-                for j in range(i+1):
-                    #if an interaction includes the newly added column, then it is a new interaction
-                    if i == row[-1] or j == row[-1]:
-                        newRow = [-1]*(column)
-                        for r in range(len(newRow)):
-                            if newRow[r] == -1:
-                                greatestSeenRow, optionsRow = -1, {}
-                                for symRow in range(v):
-                                    newRow[r] = symRow
-                                    if len(interCounter(newRow,seenInteractions)) >= greatestSeenRow:
-                                        optionsRow[symRow] = len(interCounter(newRow,seenInteractions))
-                                        greatestSeenRow = len(interCounter(newRow,seenInteractions))
-                                if len(optionsRow) == 0:
-                                    newRow[r] = random.randint(0,v-1)
+        newRow = [-1]*(k)
+        #change to force random interaction instead of random symbol
+        interToAdd = unseenInteractions.pop(random.choice(list(unseenInteractions.keys())))
+        inter  = interToAdd[0:2]
+        locationA = int(interToAdd[interToAdd.find('r')+1:interToAdd.find('c')])
+        locationB = int(interToAdd[interToAdd.find('c')+1:])
+        newRow[locationA], newRow[locationB] = int(inter[0]),int(inter[1])
+        CA.append(newRow)
+        # for every don't care(-1's), either pick symbol that
+        # maximizes coverage, or pick random if coverage can't be maximized
+        for i in range(len(CA[-1])):
+            greatestSeen, options, toAdd = -1, {}, -1
+            for sym in range(v):
+                CA[-1][i] = sym
+                if len(interCounter(CA[-1],seenInteractions)) >= greatestSeen:
+                    options[sym] = len(interCounter(CA[-1],seenInteractions))
+                    greatestSeen = len(interCounter(CA[-1],seenInteractions))
+            if len(options) == 0:
+                CA[-1][i] = random.randint(0,v-1)
+            CA[-1][i] = options.pop(random.choice(list(options.keys())))
+            seenInteractions.update(interCounter(CA[-1],seenInteractions))
 
-                                randKey = random.choice(list(optionsRow))
-
-                                newRow[r] = list(optionsRow).pop(list(optionsRow).index(randKey))
-                                seenInteractions.update(interCounter(row,seenInteractions))
-
-
-                                CA_new.append(newRow)
-
-
-
-    #print(CA_new)
-    #print(unseenInterCount)
-    #print(len(seenInteractions))
-
-    return CA_new
-
+    return CA
 
 if __name__ == '__main__':
-    CA = naiveDiagonalApproach(2,15,3)
-    print(CA)
-    print("Number of rows:", len(CA))
-
-    newCA = growCA(CA,2,15,3)
-    print("number of new rows:", len(newCA))
-#
-#   print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
-#   print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
-#   print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
-#   print("Number of rows:", len(naiveDiagonalApproach(2,15,3)))
+    CALengthsOne, CALengthsTwo = [],[]
+    for i in range(5):
+        result = naiveDiagonalApproach(2,14,2)
+        print(len(result),len(naiveDiagonalApproach(2,15,2)))
+        CALengthsOne.append(len(result))
+        print(len(naiveDiagonalGrowth(result,2,14,2)))
+        #CALengthsTwo.append(len(naiveDiagonalGrowth(result,2,15,2)))
+    #rowPlot.scatter([1,2,3,4,5],CALengthsOne)
+    #rowPlot.xlabel('# of Runs for Diagonal IPO Generation Algo.')
+    #rowPlot.ylabel('N')
+    #rowPlot.suptitle('t = 2,k = 15,v = 2')
+    #rowPlot.show()
+    #rowPlot.scatter([1,2,3,4,5],CALengthsTwo)
+    #rowPlot.xlabel('# of Runs for Diagonal IPO Growth Algo.')
+    #rowPlot.ylabel('N')
+    #rowPlot.suptitle('t = 2,k = 16,v = 2')
+    #rowPlot.show()
