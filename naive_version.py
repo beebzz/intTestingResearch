@@ -1,4 +1,5 @@
 from scipy import special
+from regular_ipo import *
 import matplotlib.pyplot as rowPlot
 import math
 import random
@@ -43,17 +44,14 @@ def generateUnseenInters(t,k,v):
 """Generation Algorithm (method assumes that t = 2 and v < 11)"""
 def naiveDiagonalApproach(t,k,v):
     CA = []
-    # pick random symbol to start the covering array with
     random_sym, unseenInterCount, seenInteractions = random.randint(0,v-1), int(v**t*(special.binom(k,t))), set()
     unseenInteractions = generateUnseenInters(t,k,v)
     initRow = [-1]*(k-1)
     initRow.insert(0,random_sym)
     CA.append(initRow)
-    # while there's unseen interactions:
     while len(seenInteractions) < unseenInterCount:
-        # add random symbol to right of upperrightmost symbol
         benchmark = -1
-        if CA[0][-1] == -1:
+        if -1 in CA[0]:
             for i in range(len(CA[0])):
                 if CA[0][i] == -1:
                     CA[0][i] = random.randint(0,v-1)
@@ -62,15 +60,12 @@ def naiveDiagonalApproach(t,k,v):
         if benchmark == -1:
             benchmark = len(CA[0])
         newRow = [-1]*(k)
-        #change to force random interaction instead of random symbol
         interToAdd = unseenInteractions.pop(random.choice(list(unseenInteractions.keys())))
         inter  = interToAdd[0:2]
         locationA = int(interToAdd[interToAdd.find('r')+1:interToAdd.find('c')])
         locationB = int(interToAdd[interToAdd.find('c')+1:])
         newRow[locationA], newRow[locationB] = int(inter[0]),int(inter[1])
         CA.append(newRow)
-        # for every don't care(-1's), either pick symbol that
-        # maximizes coverage, or pick random if coverage can't be maximized
         for row in CA:
             for i in range(benchmark):
                 if row[i] == -1:
@@ -82,61 +77,51 @@ def naiveDiagonalApproach(t,k,v):
                             greatestSeen = len(interCounter(row,seenInteractions))
                     if len(options) == 0:
                         row[i] = random.randint(0,v-1)
-                    row[i] = options.pop(random.choice(list(options.keys())))
+                    else:
+                        row[i] = random.choice(list(options.keys()))
+                        options.pop(row[i])
                     seenInteractions.update(interCounter(row,seenInteractions))
     return CA
 
 """Growth Algorithm (method assumes that t = 2 and v < 11)"""
 def naiveDiagonalGrowth(CA,t,k,v):
-    #incease k by 1
     k = k+1
-    #print(t,k,v)
     unseenInterCount, seenInteractions = int(v**t*(special.binom(k,t))), set()
     unseenInteractions = generateUnseenInters(t,k,v)
     for row in CA:
         seenInteractions.update(interCounter(row,seenInteractions))
-    for i in range(len(CA)):
+    CA[0].append(random.randint(0,v-1))
+    for i in range(1,len(CA)):
         CA[i].append(-1)
-    for row in CA:
-        greatestSeen, options, toAdd = -1, {}, -1
-        for sym in range(v):
-            row[-1] = sym
-            if len(interCounter(row,seenInteractions)) >= greatestSeen:
-                options[sym] = len(interCounter(row,seenInteractions))
-                greatestSeen = len(interCounter(row,seenInteractions))
-        if len(options) == 0:
-            row[-1] = random.randint(0,v-1)
-        row[-1] = options.pop(random.choice(list(options.keys())))
-        seenInteractions.update(interCounter(row,seenInteractions))
     while len(seenInteractions) < unseenInterCount:
         newRow = [-1]*(k)
-        #change to force random interaction instead of random symbol
         interToAdd = unseenInteractions.pop(random.choice(list(unseenInteractions.keys())))
         inter  = interToAdd[0:2]
         locationA = int(interToAdd[interToAdd.find('r')+1:interToAdd.find('c')])
         locationB = int(interToAdd[interToAdd.find('c')+1:])
         newRow[locationA], newRow[locationB] = int(inter[0]),int(inter[1])
         CA.append(newRow)
-        # for every don't care(-1's), either pick symbol that
-        # maximizes coverage, or pick random if coverage can't be maximized
-        for i in range(len(CA[-1])):
-            greatestSeen, options, toAdd = -1, {}, -1
-            for sym in range(v):
-                CA[-1][i] = sym
-                if len(interCounter(CA[-1],seenInteractions)) >= greatestSeen:
-                    options[sym] = len(interCounter(CA[-1],seenInteractions))
-                    greatestSeen = len(interCounter(CA[-1],seenInteractions))
-            if len(options) == 0:
-                CA[-1][i] = random.randint(0,v-1)
-            CA[-1][i] = options.pop(random.choice(list(options.keys())))
-            seenInteractions.update(interCounter(CA[-1],seenInteractions))
-
+        for row in CA:
+            for i in range(len(row)):
+                if row[i] == -1:
+                    greatestSeen, options, toAdd = -1, {}, -1
+                    for sym in range(v):
+                        row[i] = sym
+                        if len(interCounter(row,seenInteractions)) >= greatestSeen:
+                            options[sym] = len(interCounter(row,seenInteractions))
+                            greatestSeen = len(interCounter(row,seenInteractions))
+                    if len(options) == 0:
+                        row[i] = random.randint(0,v-1)
+                    else:
+                        row[i] = random.choice(list(options.keys()))
+                        options.pop(row[i])
+                    seenInteractions.update(interCounter(row,seenInteractions))
     return CA
 
+"""Testing and Figure Generation"""
 if __name__ == '__main__':
     CALengthsOne, CALengthsTwo, CALengthsThree = [],[],[]
     for i in range(10):
-        #result = naiveDiagonalApproach(2,14,2)
         CALengthsOne.append(len(naiveDiagonalApproach(2,15,2)))
         CALengthsTwo.append(len(naiveDiagonalApproach(2,30,4)))
         CALengthsThree.append(len(naiveDiagonalApproach(2,43,5)))

@@ -9,6 +9,8 @@ import itertools
     Now that regular version is complete, we now focus on implementing a potentially
     more efficient approach; adding a logarithmic number of columns then adding a row
     (while there's columns to add that is)
+
+    Update: This version has proven to be dysfunctional.
 """
 
 def interCounter(row, seenInteractions):
@@ -37,27 +39,20 @@ def generateUnseenInters(t,k,v):
 """Generation Algo (method assumes that t = 2 and v < 11)"""
 def logDiagonalApproach(t,k,v):
     CA = []
-    # pick random symbol to start the covering array with
     random_sym, unseenInterCount, seenInteractions = random.randint(0,v-1), int(v**t*(special.binom(k,t))), set()
     unseenInteractions = generateUnseenInters(t,k,v)
     initRow = [-1]*(k-1)
     initRow.insert(0,random_sym)
     CA.append(initRow)
-    # while there's unseen interactions:
-    #print(unseenInterCount)
     while len(seenInteractions) < unseenInterCount:
-        # same strategy as naive except add a logarithmic number of columns,
-        # instead of one, proportional to the remaining number of unfilled columns
         remColumns, colsToAdd = 0, 1
         benchmark = 0
         for i in range(len(CA[0])):
             if CA[0][i] == -1:
                 remColumns += 1
         if remColumns > 0:
-            #print("remaining cols",remColumns)
             colsToAdd = math.floor(math.log(remColumns))
             colCount = colsToAdd
-            #print('cols to add',colsToAdd)
             j = 0
             while j < len(CA[0]) and colCount > 0:
                 if CA[0][j] == -1:
@@ -76,8 +71,6 @@ def logDiagonalApproach(t,k,v):
                 locationB = int(interToAdd[interToAdd.find('c')+1:])
                 newRow[locationA], newRow[locationB] = int(inter[0]),int(inter[1])
             CA.append(newRow)
-        # for every don't care(-1's), either pick symbol that
-        # maximizes coverage, or pick random if coverage can't be maximized
         for row in CA:
             for i in range(benchmark):
                 if row[i] == -1:
@@ -91,12 +84,6 @@ def logDiagonalApproach(t,k,v):
                         row[i] = random.randint(0,v-1)
                     row[i] = options.pop(random.choice(list(options.keys())))
                     seenInteractions.update(interCounter(row,seenInteractions))
-    return CA
-
-def logDiagonalGrowth(CA,t,k,v):
-    # add logarithmic # of columns proportional to k (add log(k) columns)
-    # then fill in necessary rows
-        # if logarithmic # is < 1, just add 1 (i.e. utilize the naive growth approach instead)
     return CA
 
 if __name__ == '__main__':
